@@ -27,21 +27,23 @@
 ![alt text](architecture.png)
 
 Carte 1 : 192.168.56.1\
-Carte 2 : 192.168.57.1
+Carte 2 : 192.168.57.1\
+Carte 3 : 192.168.58.1
 
 FIREWALL:
 - NAT
-- Carte 1 -> 192.168.56.10
-- Carte 2 -> 192.168.57.10
+- Carte 1 -> 192.168.56.10 -> (serveur)
+- Carte 2 -> 192.168.57.10 -> (backup)
+- Carte 3 -> 197.168.58.10 -> (client)
 
 SERVEUR :
 - Carte 1 -> 192.168.56.20
 
 BACKUP :
-- Carte 1 -> 192.168.56.30
+- Carte 2 -> 192.168.57.20
 
 CLIENT :
-- Carte 2 -> 192.168.57.20
+- Carte 3 -> 192.168.58.20
 
 
 

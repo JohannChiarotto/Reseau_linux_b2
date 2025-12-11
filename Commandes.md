@@ -1,0 +1,99 @@
+# Service réseau
+
+**Membres :**
+- Johann CHIAROTTO
+- Dylan THOMAS
+
+**Contexte :** Vous êtes administrateur système dans une entreprise. Votre mission est de concevoir, déployer et maintenir une infrastructure réseau complète capable d'héberger les services de l'entreprise.
+
+**Sujet :** https://gitlab.com/MoulesFrites/b2-linux-2025/-/blob/main/00-Projet.md?ref_type=heads
+
+
+‎ 
+## 1️⃣ Infrastructure de base
+
+### VM :
+- Rocky-9.7-x86_64-minimal
+- Mémoire vive : 2048
+- Processeur : 2CPU
+- 1.Optique 2.Disque dur
+- adaptateur 1 : NAT
+- adaptateur 2 : HostOnly
+
+
+### Configuration carte HostOnly
+
+Création d'une carte Réseau sans DNS pour reliser en HOstOnly.
+
+```
+sudo nano /etc/sysconfig/network-script/ifcfg-enp0s8
+```
+
+```
+DEVICE=enp0s8
+NAME=johann
+
+ONBOOT=yes
+BOOTPROTO=static
+
+IPADDR=192.168.56.<ID-PC>
+NETMASK=255.255.255.0
+GATEWAY=198.168.56.1
+DNS1=8.8.8.8
+```
+
+### Création d'un compte autre qu'**admin**
+
+```
+sudo adduser <NAME>
+sudo passwd <NAME>
+sudo usermod -aG wheel <NAME>
+su - <NAME>
+```
+
+### Configuration SSH
+
+⚠️ A TESTER ET VÉRIFIER
+
+```
+nano /etc/ssh/sshd_config
+```
+
+- Port 2222
+- PermitRootLogin no
+- MaxAuthTries 5
+- PubkeyAuthentication yes
+- PasswordAuthentication no
+- PermetEmptyPasswords no
+
+```
+sudo systemctl reload sshd   
+```
+
+
+### Changement Hostname
+
+```
+sudo hostnamectl set-hostname PC-<ID>
+```
+
+
+
+
+
+
+
+‎ 
+## 2️⃣ Sauvegarde et restauration
+
+‎ 
+## 3️⃣ Services réseau
+
+‎ 
+## 4️⃣ Conteneurisation
+
+‎ 
+## 5️⃣ Automatisation
+
+‎ 
+## 6️⃣ Surveillance

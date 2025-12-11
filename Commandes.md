@@ -21,6 +21,18 @@
 - adaptateur 2 : HostOnly
 
 
+### IPs/cartes reseaux
+
+Carte 1 : 192.168.56.1
+Carte 2 : 192.168.57.1
+
+FIREWALL:
+- NAT
+- Carte 1 -> 192.168.56.10
+- Carte 2 -> 192.168.57.10
+
+
+
 ### Configuration carte HostOnly
 
 Création d'une carte Réseau sans DNS pour reliser en HOstOnly.

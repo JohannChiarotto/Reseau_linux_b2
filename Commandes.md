@@ -3,7 +3,7 @@
 **Membres :**
 - Johann CHIAROTTO
 - Dylan THOMAS
-
+- Theo DARRIBAU
 **Contexte :** Vous êtes administrateur système dans une entreprise. Votre mission est de concevoir, déployer et maintenir une infrastructure réseau complète capable d'héberger les services de l'entreprise.
 
 **Sujet :** https://gitlab.com/MoulesFrites/b2-linux-2025/-/blob/main/00-Projet.md?ref_type=heads

@@ -21,7 +21,7 @@
 - adaptateur 2 : HostOnly
 
 
-### IPs/cartes reseaux
+### Architecture réseau
 
 Carte 1 : 192.168.56.1
 Carte 2 : 192.168.57.1
@@ -30,6 +30,15 @@ FIREWALL:
 - NAT
 - Carte 1 -> 192.168.56.10
 - Carte 2 -> 192.168.57.10
+
+SERVEUR :
+- Carte 1 -> 192.168.56.20
+
+BACKUP :
+- Carte 1 -> 192.168.56.30
+
+CLIENT :
+- Carte 2 -> 192.168.57.20
 
 
 

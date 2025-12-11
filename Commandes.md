@@ -4,6 +4,7 @@
 - Johann CHIAROTTO
 - Dylan THOMAS
 - Theo DARRIBAU
+
 **Contexte :** Vous êtes administrateur système dans une entreprise. Votre mission est de concevoir, déployer et maintenir une infrastructure réseau complète capable d'héberger les services de l'entreprise.
 
 **Sujet :** https://gitlab.com/MoulesFrites/b2-linux-2025/-/blob/main/00-Projet.md?ref_type=heads
@@ -49,12 +50,12 @@ CLIENT :
 Création d'une carte Réseau sans DNS pour reliser en HOstOnly.
 
 ```
-sudo nano /etc/sysconfig/network-script/ifcfg-enp0s8
+sudo nano /etc/sysconfig/network-script/ifcfg-enp0s<CARTE>
 ```
 
 ```
-DEVICE=enp0s8
-NAME=johann
+DEVICE=<CARTE>
+NAME=lan
 
 ONBOOT=yes
 BOOTPROTO=static
@@ -63,6 +64,11 @@ IPADDR=192.168.56.<ID-PC>
 NETMASK=255.255.255.0
 GATEWAY=198.168.56.1
 DNS1=8.8.8.8
+```
+
+```
+sudo nmcli con reload 
+sudo nmcli con up lan
 ```
 
 ### Création d'un compte autre qu'**admin**
@@ -97,7 +103,7 @@ sudo systemctl reload sshd
 ### Changement Hostname
 
 ```
-sudo hostnamectl set-hostname PC-<ID>
+sudo hostnamectl set-hostname <NAME>
 ```
 
 
@@ -114,7 +120,7 @@ sudo crontab -e
 0 3 * * * /usr/local/bin/backup_rsync.sh 
 ```
 
-Nom du fichier de sauvegarde : `sauvegarde.sh`.
+Nom du fichier de sauvegarde : `backup_rsync.sh`.
 
 La sauvegarde sert a enregistrer tous les fichiers qu'il y a sur la VM.\
 Une fois la sauvevegarde faite, nous revevons un mail du status de la sauvegarde ainsi que l'emplacement de la sauvegarde.

@@ -103,11 +103,22 @@ sudo hostnamectl set-hostname PC-<ID>
 
 
 
-
-
-
 ‎ 
 ## 2️⃣ Sauvegarde et restauration
+
+
+Script de sauvegarde à automatisé avec cron.
+
+```
+sudo crontab -e
+0 3 * * * /usr/local/bin/backup_rsync.sh 
+```
+
+Nom du fichier de sauvegarde : `sauvegarde.sh`.
+
+La sauvegarde sert a enregistrer tous les fichiers qu'il y a sur la VM.\
+Une fois la sauvevegarde faite, nous revevons un mail du status de la sauvegarde ainsi que l'emplacement de la sauvegarde.
+
 
 ‎ 
 ## 3️⃣ Services réseau

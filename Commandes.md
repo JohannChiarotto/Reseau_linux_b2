@@ -23,6 +23,8 @@
 
 ### Architecture réseau
 
+![alt text](image.png)
+
 Carte 1 : 192.168.56.1
 Carte 2 : 192.168.57.1
 

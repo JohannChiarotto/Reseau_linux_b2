@@ -91,10 +91,42 @@ nano /etc/ssh/sshd_config
 
 - Port 2222
 - PermitRootLogin no
-- MaxAuthTries 5
-- PubkeyAuthentication yes
-- PasswordAuthentication no
-- PermetEmptyPasswords no
+- PasswordAuthentication yes
+- PermitEmptyPasswords no
+- AllowUsers votre_user
+- Protocol 2
+- LoginGraceTime 60
+- MaxAuthTries 3
+- KbdInteractiveAuthentication no
+
+Vérification erreur d'écriture :
+```
+sudo sshd -t
+```
+
+```
+sudo firewall-cmd --permanent --add-port=2222/tcp
+sudo firewall-cmd --reload
+```
+
+Régler le problème de **SELinux** qui bloque le port :
+
+```
+# Installer les outils nécessaires
+sudo dnf install policycoreutils-python-utils -y
+
+# Autoriser le port 2222 pour SSH dans SELinux
+sudo semanage port -a -t ssh_port_t -p tcp 2222
+
+# Vérifier que le port est bien ajouté
+sudo semanage port -l | grep ssh
+
+# Redémarrer SSH
+sudo systemctl restart sshd
+
+# Vérifier le statut
+sudo systemctl status sshd
+```
 
 ```bash
 sudo systemctl reload sshd   

@@ -1,17 +1,6 @@
-# Service réseau
+# Commmandes de configuration
 ‎ 
 
-**Membres :**
-- Johann CHIAROTTO
-- Dylan THOMAS
-- Theo DARRIBAU
-
-**Contexte :** Vous êtes administrateur système dans une entreprise. Votre mission est de concevoir, déployer et maintenir une infrastructure réseau complète capable d'héberger les services de l'entreprise.
-
-**Sujet :** https://gitlab.com/MoulesFrites/b2-linux-2025/-/blob/main/00-Projet.md?ref_type=heads
-
-
-‎ 
 ## 1️⃣ Infrastructure de base
 
 ### VM :
@@ -292,6 +281,114 @@ sudo systemctl reload nginx
 ```bash
 sudo firewall-cmd --permanent --add-service=http
 sudo firewall-cmd --reload
+```
+
+
+
+### Service mail
+
+```bash
+sudo hostnamectl set-hostname mail.example.local
+```
+
+```bash
+sudo nano /etc/hosts
+127.0.0.1   mail.example.local mail
+```
+
+```bash
+sudo dnf install postfix -y
+```
+
+```bash
+sudo systemctl enable --now postfix
+```
+
+```bash
+sudo nano /etc/postfix/main.cf
+```
+
+- A complete dans la commande avt
+```bash
+myhostname = mail.example.local
+mydomain = example.local
+myorigin = $mydomain
+inet_interfaces = all
+inet_protocols = ipv4
+mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+mynetworks = 127.0.0.0/8
+home_mailbox = Maildir/
+
+```
+
+```bash
+sudo systemctl restart postfix
+```
+
+```bash
+sudo dnf install dovecot -y
+sudo systemctl enable --now dovecot
+```
+
+Rajouter la ligne suivante `protocols = imap pop3 lmtp` dans :
+```bash
+sudo nano /etc/dovecot/dovecot.conf
+```
+
+Rajouter la ligne suivante `mail_location = maildir:~/Maildir` dans :
+```bash
+sudo nano /etc/dovecot/conf.d/10-mail.conf
+```
+
+```bash
+sudo firewall-cmd --permanent --add-service=smtp
+sudo firewall-cmd --permanent --add-service=imap
+sudo firewall-cmd --permanent --add-service=imaps
+sudo firewall-cmd --reload
+```
+
+```bash
+sudo adduser test
+sudo passwd test
+```
+
+```bash
+sudo mkdir -p /home/test/Maildir
+sudo chown -R test:test /home/test/Maildir
+```
+
+```bash
+sudo dnf install s-nail -y
+```
+
+```bash
+echo "Ceci est un test" | mail -s "Test SMTP" test@localhost
+```
+
+```bash
+ls /home/test/Maildir/new
+```
+
+- Sur votre PC
+
+```bash
+telnet 192.168.56.3 25
+```
+
+```bash
+EHLO pc-hote
+MAIL FROM:<test@example.local>
+RCPT TO:<test@example.local>
+DATA
+Subject: Test depuis PC
+Ceci est un test
+.
+QUIT
+```
+
+- Sur la VM
+```bash
+sudo ls /home/test/Maildir/new
 ```
 
 ‎ 

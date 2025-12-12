@@ -49,13 +49,13 @@ CLIENT :
 
 ### Configuration carte HostOnly
 
-Création d'une carte Réseau sans DNS pour reliser en HOstOnly.
+Création d'une carte Réseau sans DNS pour reliser en HostOnly.
 
-```
+```bash
 sudo nano /etc/sysconfig/network-script/ifcfg-enp0s<CARTE>
 ```
 
-```
+```bash
 DEVICE=<CARTE>
 NAME=lan
 
@@ -68,25 +68,23 @@ GATEWAY=198.168.56.1
 DNS1=8.8.8.8
 ```
 
-```
+```bash
 sudo nmcli con reload 
 sudo nmcli con up lan
 ```
 
 ### Création d'un compte autre qu'**admin**
 
-```
+```bash
 sudo adduser <NAME>
 sudo passwd <NAME>
 sudo usermod -aG wheel <NAME>
 su - <NAME>
 ```
 
-### Configuration SSH
+### Configuration SSH ⚠️ A TESTER ET VÉRIFIER
 
-⚠️ A TESTER ET VÉRIFIER
-
-```
+```bash
 nano /etc/ssh/sshd_config
 ```
 
@@ -97,15 +95,66 @@ nano /etc/ssh/sshd_config
 - PasswordAuthentication no
 - PermetEmptyPasswords no
 
-```
+```bash
 sudo systemctl reload sshd   
 ```
 
 
 ### Changement Hostname
 
-```
+```bash
 sudo hostnamectl set-hostname <NAME>
+```
+
+
+### Configuration firewall
+
+**Activer le forwarding IP (routage)**
+
+```bash
+# Activer temporairement
+sudo sysctl -w net.ipv4.ip_forward=1
+
+# Rendre permanent
+sudo sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
+sudo sysctl -p
+```
+
+**Configurer les zones firewall**
+
+```bash
+# Assigner les interfaces aux zones
+sudo firewall-cmd --permanent --zone=public --add-interface=enp0s3
+sudo firewall-cmd --permanent --zone=internal --add-interface=enp0s8
+sudo firewall-cmd --permanent --zone=internal --add-interface=enp0s9
+sudo firewall-cmd --permanent --zone=internal --add-interface=enp0s10
+sudo firewall-cmd --reload
+```
+
+**Activer le NAT (masquerading)**
+
+```bash
+# Activer le masquerading sur les zones
+sudo firewall-cmd --permanent --zone=public --add-masquerade
+sudo firewall-cmd --permanent --zone=internal --add-masquerade
+sudo firewall-cmd --reload
+```
+
+**Autoriser le forwarding depuis la zone internal**
+
+```bash
+# Changer le target de la zone internal pour autoriser le forwarding
+sudo firewall-cmd --permanent --zone=internal --set-target=ACCEPT
+sudo firewall-cmd --reload
+```
+
+**Vérification**
+
+```bash
+# Vérifier la configuration
+sudo firewall-cmd --zone=public --list-all
+sudo firewall-cmd --zone=internal --list-all
+cat /proc/sys/net/ipv4/ip_forward
 ```
 
 
@@ -117,7 +166,7 @@ sudo hostnamectl set-hostname <NAME>
 
 Script de sauvegarde à automatisé avec cron.
 
-```
+```bash
 sudo crontab -e
 0 3 * * * /usr/local/bin/backup_rsync.sh 
 ```

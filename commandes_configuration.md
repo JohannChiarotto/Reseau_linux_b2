@@ -215,44 +215,55 @@ Une fois la sauvevegarde faite, nous revevons un mail du status de la sauvegarde
 
 ### Service web https
 
-```
+```bash
 sudo dnf update -y
 ```
-```
+
+```bash
 sudo dnf install nginx -y
 ```
-```
+
+```bash
 sudo systemctl enable --now nginx
 ```
+
 - Vérification si c'est enable
-```
+```bash
 sudo systemctl status nginx
 ```
+
 ```
 sudo firewall-cmd --permanent --add-service=http
 sudo firewall-cmd --reload
 ```
+
 - Site accessbile via l'ip de la machine sur internet normalement
-```
+```bash
 sudo mkdir /etc/nginx/certificate
 ```
-``` 
+
+``` bash
 cd /etc/nginx/certificate
 ```
-```
+
+```bash
 sudo openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out nginx-certificate.crt -keyout nginx.key
 ```
-```
+
+```bash
 nano /etc/nginx/nginx.conf
 ```
-```
+
+```bash
 return 301 https://$host$request_uri;
 ```
+
 - Les deux commandes suivantes sont l'ajout de la redirection http vers https   
-```
+```bash
 sudo nano /etc/nginx/conf.d/ssl.conf
 ```
-```
+
+```bash
 server {
     listen 443 ssl;
     listen [::]:443 ssl;
@@ -269,13 +280,16 @@ server {
     index index.html index.htm;
 }
 ```
-```
+
+```bash
 sudo nginx -t
 ```
-```
+
+```bash
 sudo systemctl reload nginx
 ```
-```
+
+```bash
 sudo firewall-cmd --permanent --add-service=http
 sudo firewall-cmd --reload
 ```

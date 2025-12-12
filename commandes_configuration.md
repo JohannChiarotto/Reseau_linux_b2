@@ -180,6 +180,73 @@ Une fois la sauvevegarde faite, nous revevons un mail du status de la sauvegarde
 ‎ 
 ## 3️⃣ Services réseau
 
+### Service web https
+
+```
+sudo dnf update -y
+```
+```
+sudo dnf install nginx -y
+```
+```
+sudo systemctl enable --now nginx
+```
+- Vérification si c'est enable
+```
+sudo systemctl status nginx
+```
+```
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --reload
+```
+- Site accessbile via l'ip de la machine sur internet normalement
+```
+sudo mkdir /etc/nginx/certificate
+```
+``` 
+cd /etc/nginx/certificate
+```
+```
+sudo openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out nginx-certificate.crt -keyout nginx.key
+```
+```
+nano /etc/nginx/nginx.conf
+```
+```
+return 301 https://$host$request_uri;
+```
+- Les deux commandes suivantes sont l'ajout de la redirection http vers https   
+```
+sudo nano /etc/nginx/conf.d/ssl.conf
+```
+```
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    server_name _;
+
+    ssl_certificate     /etc/nginx/certificate/nginx-certificate.crt;
+    ssl_certificate_key /etc/nginx/certificate/nginx.key;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    root /usr/share/nginx/html;
+    index index.html index.htm;
+}
+```
+```
+sudo nginx -t
+```
+```
+sudo systemctl reload nginx
+```
+```
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --reload
+```
+
 ‎ 
 ## 4️⃣ Conteneurisation
 

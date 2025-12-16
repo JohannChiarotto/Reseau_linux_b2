@@ -240,7 +240,7 @@ sudo openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out nginx
 ```
 
 ```bash
-nano /etc/nginx/nginx.conf
+sudo nano /etc/nginx/nginx.conf
 ```
 
 ```bash
@@ -279,7 +279,7 @@ sudo systemctl reload nginx
 ```
 
 ```bash
-sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --permanent --add-service=https
 sudo firewall-cmd --reload
 ```
 

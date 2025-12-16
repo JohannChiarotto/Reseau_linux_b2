@@ -366,13 +366,13 @@ echo "Ceci est un test" | mail -s "Test SMTP" test@localhost
 ```
 
 ```bash
-ls /home/test/Maildir/new
+sudo ls /home/test/Maildir/new
 ```
 
 - Sur votre PC
 
 ```bash
-telnet 192.168.56.3 25
+telnet 192.168.56.20 25
 ```
 
 ```bash

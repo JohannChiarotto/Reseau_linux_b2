@@ -243,8 +243,17 @@ sudo openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out nginx
 sudo nano /etc/nginx/nginx.conf
 ```
 
+Rajouter la ligne suivante : `return 301 https://$host$request_uri;`\
+De sorte a avoir un bloc comme celui ci :
+
 ```bash
-return 301 https://$host$request_uri;
+server {
+	listen       80;
+    listen       [::]:80;
+    server_name  _;
+
+    return 301 https://$host$request_uri;
+}
 ```
 
 - Les deux commandes suivantes sont l'ajout de la redirection http vers https   

@@ -53,10 +53,12 @@ L'infrastructure utilise un modèle à **trois sous-réseaux distincts**, chacun
 | **Service de Mail** | Serveur de messagerie | **PostFix** (Serveur)\ **Dovecot** (serveur)| 🚧 |  |
 
 
+Pour compléter le tableau du haut :
+| Service | Rôle | Technologie(s) | Conteneurisé | Accès Clé |
 | **Résolution de Noms** | Serveur DNS interne | BIND9 | Non | `dig site.mon-entreprise.lan` |
 | **Surveillance** | Monitoring et Alertes | Prometheus & Grafana | Oui (Docker Compose) | $https://monitoring.mon-entreprise.lan$ |
 
-### 4. Outils Clés
+### 4. Outils Clés  🚧
 
 | Catégorie | Outil(s) |
 | :--- | :--- |
@@ -67,7 +69,7 @@ L'infrastructure utilise un modèle à **trois sous-réseaux distincts**, chacun
 
 ---
 
-## ⚙️ Déploiement et Automatisation
+## ⚙️ Déploiement et Automatisation  🚧
 
 L'ensemble de l'infrastructure est entièrement déployé et configuré via **Ansible**.
 
@@ -95,14 +97,14 @@ L'ensemble de l'infrastructure est entièrement déployé et configuré via **An
 
 ### Accès
 
-L'accès à toutes les machines s'effectue via **SSH chiffré** en utilisant des paires de clés. L'authentification par mot de passe a été désactivée.
+L'accès à toutes les machines s'effectue via **SSH** et ses règles établie. L'authentification par mot de passe est tout de même activé.
 
-### Stratégie de Sauvegarde
+### Stratégie de Sauvegarde  🚧
 
 * Les données critiques et les configurations sont sauvegardées **quotidiennement** sur un serveur dédié.
 * L'infrastructure peut être **restaurée** rapidement grâce au redéploiement automatisé (Ansible) suivi de la restauration des données à partir des sauvegardes.
 
-### Surveillance
+### Surveillance  🚧
 
 L'état des services est surveillé en temps réel via l'interface **Grafana** (accessible via le service de surveillance). Des alertes sont configurées en cas de défaillance majeure.
 
@@ -111,7 +113,7 @@ L'état des services est surveillé en temps réel via l'interface **Grafana** (
 ## 📖 Documentation
 
 * **[COMMANDES_CONFIGURATIONS.md](./COMMANDES_CONFIGURATIONS.md)** : Référence complète et chronologique des commandes et configurations manuelles effectuées.
-
+* **Scripts et fichier utiles** : Utilisé pour la sauvegarde, la restauration ou même pour une interface Nginx.
 ---
 
 **Dépôt Git :** https://github.com/JohannChiarotto/Reseau_linux_b2.git

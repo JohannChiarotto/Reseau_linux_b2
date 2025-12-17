@@ -72,7 +72,9 @@ sudo usermod -aG wheel <NAME>
 su - <NAME>
 ```
 
-### Configuration SSH ⚠️ A TESTER ET VÉRIFIER
+### Configuration SSH 
+
+Cette configuration s'applique sur les VMs : FIREWALL, SERVEUR & BACKUP.
 
 ```bash
 nano /etc/ssh/sshd_config
@@ -82,7 +84,7 @@ nano /etc/ssh/sshd_config
 - PermitRootLogin no
 - PasswordAuthentication yes
 - PermitEmptyPasswords no
-- AllowUsers votre_user
+- AllowUsers <VOTRE_USER>
 - Protocol 2
 - LoginGraceTime 60
 - MaxAuthTries 3

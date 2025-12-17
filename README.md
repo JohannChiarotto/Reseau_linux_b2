@@ -25,7 +25,7 @@ Ce projet met l'accent sur :
 ### 1. Schéma d'Architecture et Topologie Réseau
 L'infrastructure utilise un modèle à **trois sous-réseaux distincts**, chacun géré et sécurisé par une machine **FIREWALL** agissant comme passerelle (NAT/Routage).
 
-[Image of the Linux network topology with three isolated subnets connected through a central firewall machine]
+![alt text](architecture.png)
 
 * **Réseaux Utilisés :** $192.168.56.0/24$ (Réseau Serveur), $192.168.57.0/24$ (Réseau Sauvegarde), $192.168.58.0/24$ (Réseau Client).
 * **Système d'Exploitation :** **Rocky Linux 9** pour toutes les machines.
@@ -49,8 +49,10 @@ L'infrastructure utilise un modèle à **trois sous-réseaux distincts**, chacun
 
 | Service | Rôle | Technologie(s) | Conteneurisé | Accès Clé |
 | :--- | :--- | :--- | :--- | :--- |
-| **Service Web** | Site vitrine en HTTPS | **Nginx** | Oui (Docker) | `https://site.mon-entreprise.lan` |
-| **Service de Mail** | Serveur de messagerie | **PostFix** (Serveur) **Dovecot** (serveur)| Non | SMTP / SMTPS |
+| **Service Web** | Site vitrine en HTTPS | **Nginx** | 🚧 | `https://192.168.56.20` |
+| **Service de Mail** | Serveur de messagerie | **PostFix** (Serveur)\ **Dovecot** (serveur)| 🚧 |  |
+
+
 | **Résolution de Noms** | Serveur DNS interne | BIND9 | Non | `dig site.mon-entreprise.lan` |
 | **Surveillance** | Monitoring et Alertes | Prometheus & Grafana | Oui (Docker Compose) | $https://monitoring.mon-entreprise.lan$ |
 

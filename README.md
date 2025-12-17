@@ -25,7 +25,7 @@ Ce projet met l'accent sur :
 ### 1. Schéma d'Architecture et Topologie Réseau
 L'infrastructure utilise un modèle à **trois sous-réseaux distincts**, chacun géré et sécurisé par une machine **FIREWALL** agissant comme passerelle (NAT/Routage).
 
-![alt text](architecture.png)
+![alt text](fichier_supplementaire/architecture.png)
 
 * **Réseaux Utilisés :** $192.168.56.0/24$ (Réseau Serveur), $192.168.57.0/24$ (Réseau Sauvegarde), $192.168.58.0/24$ (Réseau Client).
 * **Système d'Exploitation :** **Rocky Linux 9** pour toutes les machines.

@@ -89,7 +89,7 @@ L'ensemble de l'infrastructure est entièrement déployé et configuré via **An
     ansible-playbook -i inventory/hosts main_playbook.yml
     ```
 
-**➡️ Pour le détail des commandes pas à pas, veuillez consulter le fichier [COMMANDES_CONFIGURATIONS.md](./COMMANDES_CONFIGURATIONS.md).**
+**➡️ Pour le détail des commandes pas à pas, veuillez consulter le fichier [commandes_configurations.md](./commandes_configurations.md).**
 
 ---
 
@@ -112,7 +112,7 @@ L'état des services est surveillé en temps réel via l'interface **Grafana** (
 
 ## 📖 Documentation
 
-* **[COMMANDES_CONFIGURATIONS.md](./COMMANDES_CONFIGURATIONS.md)** : Référence complète et chronologique des commandes et configurations manuelles effectuées.
+* **[commandes_configurations.md](./commandes_configurations.md)** : Référence complète et chronologique des commandes et configurations manuelles effectuées.
 * **Scripts et fichier utiles** : Utilisé pour la sauvegarde, la restauration ou même pour une interface Nginx.
 ---
 

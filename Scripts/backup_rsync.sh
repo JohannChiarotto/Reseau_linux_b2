@@ -12,7 +12,7 @@ SOURCE_DIRS=("/home" "/var/www")
 DATE=$(date +%Y-%m-%d_%H-%M-%S)
 BACKUP_DIR="${BACKUP_ROOT}/${DATE}"
 LOG_FILE="/var/log/backup_rsync.log"
-EMAIL_DEST="admin@example.com"  # a remplacer avec votre adresse mail 
+EMAIL_DEST="admin@example.com"
 RETENTION_DAYS=7
 
 # Créer le répertoire de backup
@@ -94,6 +94,9 @@ for SOURCE in "${SOURCE_DIRS[@]}"; do
         --exclude='**/cache/**' \
         --exclude='.cache' \
         --exclude='.cache/**' \
+        --exclude='restore' \
+        --exclude='restore/' \
+        --exclude='restore/**' \
         --stats \
         "${SOURCE}/" "${DEST_PATH}/" 2>&1 | tee -a "${LOG_FILE}"
     
@@ -129,25 +132,63 @@ if [ ${ERROR_COUNT} -gt 0 ]; then
 else
     log "Sauvegarde réussie sans erreur"
     
-    # Email de confirmation systématique
+    # Email de confirmation avec design amélioré
     if command -v mail &> /dev/null; then
         BACKUP_SIZE=$(du -sh "${BACKUP_DIR}" | cut -f1)
         TOTAL_BACKUPS=$(ls -1 "${BACKUP_ROOT}" | wc -l)
+        DISK_USAGE=$(df -h "${BACKUP_ROOT}" | awk 'NR==2 {print $5}')
+        DISK_AVAILABLE=$(df -h "${BACKUP_ROOT}" | awk 'NR==2 {print $4}')
         
-        echo "✅ Sauvegarde terminée avec succès
+        cat << 'EOF' | mail -s "✅ Sauvegarde Réussie - $(hostname) - $(date '+%d/%m/%Y')" "${EMAIL_DEST}"
+========================================================
+          SAUVEGARDE SYSTÈME - RAPPORT DE SUCCÈS
+========================================================
 
-📅 Date: $(date '+%d/%m/%Y à %H:%M:%S')
-🖥️  Serveur: $(hostname)
-📂 Répertoires sauvegardés: ${SOURCE_DIRS[@]}
-💾 Destination: ${BACKUP_DIR}
-📊 Taille de cette sauvegarde: ${BACKUP_SIZE}
-🗄️  Nombre total de sauvegardes: ${TOTAL_BACKUPS}
-📜 Consultez le log: ${LOG_FILE}
+✅ Statut : SUCCÈS
+📅 Date et heure : $(date '+%d/%m/%Y à %H:%M:%S')
+🖥️  Serveur : $(hostname)
+👤 Utilisateur : $(whoami)
 
----
-Sauvegardes conservées (${RETENTION_DAYS} jours):
-$(ls -1t "${BACKUP_ROOT}" | head -n 5)" | \
-        mail -s "✅ Sauvegarde réussie - $(hostname)" "${EMAIL_DEST}"
+--------------------------------------------------------
+                DÉTAILS DE LA SAUVEGARDE
+--------------------------------------------------------
+
+📂 Répertoires sauvegardés :
+   • ${SOURCE_DIRS[0]}
+   • ${SOURCE_DIRS[1]}
+
+💾 Destination : ${BACKUP_DIR}
+📊 Taille : ${BACKUP_SIZE}
+🗄️  Total sauvegardes : ${TOTAL_BACKUPS}
+⏱️  Rétention : ${RETENTION_DAYS} jours
+
+--------------------------------------------------------
+                    ESPACE DISQUE
+--------------------------------------------------------
+
+💿 Utilisation : ${DISK_USAGE}
+✨ Disponible : ${DISK_AVAILABLE}
+
+--------------------------------------------------------
+          DERNIÈRES SAUVEGARDES (5 récentes)
+--------------------------------------------------------
+
+$(ls -1t "${BACKUP_ROOT}" | head -n 5 | awk '{print "   " NR ". " $0}')
+
+--------------------------------------------------------
+                         LOGS
+--------------------------------------------------------
+
+📜 Log complet : ${LOG_FILE}
+
+💡 Pour restaurer un fichier :
+   sudo restore-backup
+
+========================================================
+Message automatique - Système de sauvegarde
+$(hostname) - $(date '+%Y')
+========================================================
+EOF
         
         log "Email de confirmation envoyé à ${EMAIL_DEST}"
     else

@@ -1,0 +1,231 @@
+---
+- name: Automatisation Infrastructure Rocky 9 - Projet Dharibo
+  hosts: serveur
+  become: yes # Exécute toutes les tâches en sudo
+  vars:
+    new_user: "johann"
+    ssh_port: 2222
+    hostname: "serveur.dharibo.local"
+
+  tasks:
+
+    # ==========================================
+    # 1️⃣ INFRASTRUCTURE & SÉCURITÉ
+    # ==========================================
+    - name: 1.1 | Changer le Hostname
+      ansible.builtin.hostname:
+        name: "{{ hostname }}"
+
+    - name: 1.2 | Configurer la carte réseau HostOnly (enp0s8)
+      ansible.builtin.copy:
+        dest: /etc/sysconfig/network-scripts/ifcfg-enp0s8
+        content: |
+          DEVICE=enp0s8
+          NAME=lan
+          ONBOOT=yes
+          BOOTPROTO=static
+          IPADDR=192.168.56.20
+          NETMASK=255.255.255.0
+          GATEWAY=192.168.56.10
+          DNS1=8.8.8.8
+      notify: Reload Network
+
+    - name: 1.3 | Sécuriser SSH (Port {{ ssh_port }} et désactiver Root)
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: '^#?Port', line: 'Port {{ ssh_port }}' }
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^#?AllowUsers', line: 'AllowUsers {{ new_user }}' }
+      notify: Restart SSH
+
+    - name: 1.3.5 | Installer les bibliothèques Python pour SELinux
+      ansible.builtin.dnf:
+        name: 
+          - python3-libselinux
+          - policycoreutils-python-utils
+        state: present
+
+    - name: 1.4 | Autoriser le port SSH {{ ssh_port }} dans SELinux
+      community.general.seport:
+        ports: "{{ ssh_port }}"
+        proto: tcp
+        setype: ssh_port_t
+        state: present
+
+    - name: 1.5 | Configurer le Pare-feu pour SSH, Web et Mail
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        permanent: yes
+        state: enabled
+      loop:
+        - http
+        - https
+        - smtp
+        - imap
+      notify: Reload Firewall
+
+    - name: 1.5.1 | Configurer le Pare-feu (Port SSH personnalisé)
+      ansible.posix.firewalld:
+        port: "{{ ssh_port }}/tcp"
+        permanent: yes
+        state: enabled
+      notify: Reload Firewall
+
+    # ==========================================
+    # 2️⃣ SERVICES RÉSEAU & PRÉREQUIS DOCKER
+    # ==========================================
+    - name: 2.1 | Installer les paquets nécessaires
+      ansible.builtin.dnf:
+        name: 
+          - epel-release
+          - nginx
+          - postfix
+          - dovecot
+          - s-nail
+          - yum-utils
+        state: present
+
+    - name: 2.2 | Ajouter le dépôt officiel Docker
+      ansible.builtin.command: dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      args:
+        creates: /etc/yum.repos.d/docker-ce.repo
+
+    - name: 2.3 | Installer Docker et Docker Compose
+      ansible.builtin.dnf:
+        name: 
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+
+    - name: 2.4 | Démarrer et activer Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: 2.5 | Désactiver les services locaux pour éviter les conflits
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: stopped
+        enabled: no
+      loop:
+        - nginx
+        - postfix
+        - dovecot
+
+    # ==========================================
+    # 3️⃣ CONTENEURISATION & CONFIGURATION
+    # ==========================================
+    - name: 3.1 | Créer les dossiers
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - /etc/nginx/certificate
+        - /opt/dharibo-server
+        - /opt/dharibo-mail
+        - /home/test/Maildir
+
+    - name: 3.2 | Générer un certificat SSL auto-signé
+      ansible.builtin.command:
+        cmd: openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /etc/nginx/certificate/nginx-certificate.crt -keyout /etc/nginx/certificate/nginx.key -subj "/C=FR/ST=Gironde/L=Bordeaux/O=Dharibo/CN={{ hostname }}"
+        creates: /etc/nginx/certificate/nginx.key
+
+    # ✅ CORRECTIF 1 : Création du fichier manquant pour le port 80
+    - name: 3.3 | Créer la configuration Nginx HTTP (Redirection port 80)
+      ansible.builtin.copy:
+        dest: /etc/nginx/conf.d/http.conf
+        content: |
+          server {
+              listen 80;
+              server_name _;
+              return 301 https://$host$request_uri;
+          }
+
+    # ✅ CORRECTIF 2 : Ajout du ",z" à la fin des volumes pour SELinux
+    - name: 3.4 | Copier les fichiers docker-compose.yml (Web et Mail)
+      ansible.builtin.copy:
+        dest: "{{ item.dest }}"
+        content: "{{ item.content }}"
+      loop:
+        - dest: /opt/dharibo-server/docker-compose.yml
+          content: |
+            version: '3.8'
+            services:
+              web-server:
+                image: nginx:latest
+                ports:
+                  - "80:80"
+                  - "443:443"
+                volumes:
+                  - /etc/nginx/conf.d:/etc/nginx/conf.d:ro,z
+                  - /etc/nginx/certificate:/etc/nginx/certificate:ro,z
+                  - /usr/share/nginx/html:/usr/share/nginx/html:ro,z
+                restart: always
+        - dest: /opt/dharibo-mail/docker-compose.yml
+          content: |
+            services:
+              mail-server:
+                image: rockylinux:9
+                container_name: mail_container
+                hostname: mail.example.local
+                ports:
+                  - "25:25"
+                  - "143:143"
+                volumes:
+                  - /etc/postfix/main.cf:/etc/postfix/main.cf:ro,z
+                  - /etc/dovecot/dovecot.conf:/etc/dovecot/dovecot.conf:ro,z
+                  - /home/test/Maildir:/home/test/Maildir:rw,z
+                command: >
+                  /bin/sh -c "dnf install -y postfix dovecot s-nail &&
+                  useradd test && echo 'test:testpass' | chpasswd &&
+                  postfix start && dovecot -F"
+
+    - name: 3.5 | Lancer les conteneurs Docker
+      community.docker.docker_compose_v2:
+        project_src: "{{ item }}"
+        state: present
+      loop:
+        - /opt/dharibo-server
+        - /opt/dharibo-mail
+
+    # ==========================================
+    # 4️⃣ SAUVEGARDE & AUTOMATISATION (CRON)
+    # ==========================================
+    - name: 4.1 | Créer le script de backup vide
+      ansible.builtin.copy:
+        dest: /usr/local/bin/backup_rsync.sh
+        content: |
+          #!/bin/bash
+          echo "Backup lancé le $(date)" >> /var/log/backup.log
+        mode: '0755'
+
+    - name: 4.2 | Créer la tâche Cron pour le Backup
+      ansible.builtin.cron:
+        name: "Backup quotidien Rsync"
+        minute: "0"
+        hour: "3"
+        job: "/usr/local/bin/backup_rsync.sh"
+
+  # ==========================================
+  # GESTIONNAIRES (Handlers)
+  # ==========================================
+  handlers:
+    - name: Reload Network
+      ansible.builtin.command: nmcli con reload && nmcli con up lan
+
+    - name: Restart SSH
+      ansible.builtin.service:
+        name: sshd
+        state: restarted
+
+    - name: Reload Firewall
+      ansible.builtin.service:
+        name: firewalld
+        state: reloaded

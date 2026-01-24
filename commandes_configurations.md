@@ -439,7 +439,7 @@ docker compose up -d
 ```
 
 ### Conteneurisation du serveur mail
-- Création du **docker-compose.yml**
+- Création du **docker-compose.yml** dans **/opt/dharibo-mail**
 ```
 services:
   mail-server:

@@ -497,9 +497,9 @@ Pour cette partie vous devrez récupérer les fichier suivants :
 - donner l'acces si vous avez un mdp :
 ```
 Votre système (PC),Commande à taper
-Ubuntu / Debian / Kali / WSL (Windows),sudo apt install sshpass
-Rocky / Fedora / CentOS / RHEL,sudo dnf install sshpass
-Mac (avec Homebrew),brew install sshpass
+Ubuntu / Debian / Kali / WSL (Windows) : sudo apt install sshpass
+Rocky / Fedora / CentOS / RHEL : sudo dnf install sshpass
+Mac (avec Homebrew) : brew install sshpass
 ```
 
 - Faitent la commande suivande pour lancer l'automatisation : `ansible-playbook -i inventory.ini setup.yml`

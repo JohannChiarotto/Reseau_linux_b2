@@ -473,7 +473,7 @@ sudo systemctl disable postfix
 ```
 - Démarrage de notre conteneur
 ```
-docker-compose up -d
+docker compose up -d
 ```
 
 ‎ 

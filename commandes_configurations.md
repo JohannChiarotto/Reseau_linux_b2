@@ -405,6 +405,77 @@ sudo ls /home/test/Maildir/new
 ‎ 
 ## 4️⃣ Conteneurisation
 
+### Conteneurisation du serveur web
+- On creer un **docker-compose.yml** dans **/opt/dharibo-server**
+```
+version: '3.8'
+
+services:
+  web-server:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # On pointe vers les dossiers réels sur votre machine
+      - /etc/nginx/conf.d:/etc/nginx/conf.d:ro
+      - /etc/nginx/certificate:/etc/nginx/certificate:ro
+      - /var/www/dharibo.com/html:/usr/share/nginx/html:ro
+    restart: always
+```
+- On stop nginx sur notre systeme car il y avait un probleme de port 80
+```
+sudo systemctl stop nginx
+sudo systemctl disable nginx
+```
+
+- Modifie la ligne du fichier .conf
+```
+root /usr/share/nginx/html
+```
+- On start notre conteneur 
+```
+docker compose up -d
+```
+
+### Conteneurisation du serveur mail
+- Création du **docker-compose.yml**
+```
+services:
+  mail-server:
+    image: rockylinux:9
+    container_name: mail_container
+    hostname: mail.example.local
+    ports:
+      - "25:25"
+      - "143:143"
+    volumes:
+      # Montage des fichiers de configuration
+      - /etc/postfix/main.cf:/etc/postfix/main.cf:ro
+      - /etc/dovecot/dovecot.conf:/etc/dovecot/dovecot.conf:ro
+      - /etc/dovecot/conf.d/10-mail.conf:/etc/dovecot/conf.d/10-mail.conf:ro
+      # Montage des données mails
+      - /home/test/Maildir:/home/test/Maildir:rw
+    command: >
+      /bin/sh -c "dnf install -y postfix dovecot s-nail &&
+      useradd test &&
+      echo 'test:password' | chpasswd &&
+      postfix start &&
+      dovecot -F"
+```
+- On stop les services sur notre machine hote
+```
+sudo systemctl stop postfix dovecot
+sudo systemctl disable postfix dovecot
+
+sudo systemctl stop postfix
+sudo systemctl disable postfix
+```
+- Démarrage de notre conteneur
+```
+docker-compose up -d
+```
+
 ‎ 
 ## 5️⃣ Automatisation
 

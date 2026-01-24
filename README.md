@@ -2,9 +2,9 @@
 ‎ 
 
 ## 👥 Membres :
-- Johann 
-- Dylan 
-- Theo 
+- Johann CHIAROTTO
+- Dylan THOMAS
+- Theo DARRIBEAU
 
 **Année :** B2 Cybersécurité
 

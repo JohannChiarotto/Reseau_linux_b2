@@ -179,12 +179,18 @@
                   - "25:25"
                   - "143:143"
                 volumes:
-                  - /etc/postfix/main.cf:/etc/postfix/main.cf:ro,z
-                  - /etc/dovecot/dovecot.conf:/etc/dovecot/dovecot.conf:ro,z
+                  # ON MONTE LES FICHIERS DANS /tmp/ POUR NE PAS BLOQUER L'INSTALLATION
+                  - /etc/postfix/main.cf:/tmp/main.cf:ro,z
+                  - /etc/dovecot/dovecot.conf:/tmp/dovecot.conf:ro,z
                   - /home/test/Maildir:/home/test/Maildir:rw,z
                 command: >
-                  /bin/sh -c "dnf install -y postfix dovecot s-nail &&
+                  /bin/sh -c "dnf install -y postfix dovecot s-nail openssl &&
+                  cat /tmp/main.cf > /etc/postfix/main.cf &&
+                  cat /tmp/dovecot.conf > /etc/dovecot/dovecot.conf &&
                   useradd test && echo 'test:testpass' | chpasswd &&
+                  chown -R test:test /home/test/Maildir &&
+                  mkdir -p /etc/pki/dovecot/certs /etc/pki/dovecot/private &&
+                  openssl req -new -x509 -nodes -out /etc/pki/dovecot/certs/dovecot.pem -keyout /etc/pki/dovecot/private/dovecot.pem -days 365 -subj '/CN=mail.example.local' &&
                   postfix start && dovecot -F"
 
     - name: 3.5 | Lancer les conteneurs Docker

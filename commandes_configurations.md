@@ -504,5 +504,7 @@ Mac (avec Homebrew) : brew install sshpass
 
 - Faitent la commande suivande pour lancer l'automatisation : `ansible-playbook -i inventory.ini setup.yml`
 
+Pour voir si les docker fonctionnent bien : `sudo docker ps -a`
+
 ‎ 
 ## 6️⃣ Surveillance

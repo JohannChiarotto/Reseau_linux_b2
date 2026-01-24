@@ -479,5 +479,30 @@ docker compose up -d
 ‎ 
 ## 5️⃣ Automatisation
 
+
+Pour cette partie vous devrez récupérer les fichier suivants :
+- inventory.ini
+- setup.yml
+
+
+(Sur une VM)
+- Créer une VM vierge avec RockyLinux 9
+- Lui définir une carte HostOnly avec une adresse ip fixe
+- Avoir un User en droit root
+
+
+(Sur votre PC)
+- assurer vous de pouvoir vous connecter en SSH a la VM créer
+- installer ainsible
+- donner l'acces si vous avez un mdp :
+```
+Votre système (PC),Commande à taper
+Ubuntu / Debian / Kali / WSL (Windows),sudo apt install sshpass
+Rocky / Fedora / CentOS / RHEL,sudo dnf install sshpass
+Mac (avec Homebrew),brew install sshpass
+```
+
+- Faitent la commande suivande pour lancer l'automatisation : `ansible-playbook -i inventory.ini setup.yml`
+
 ‎ 
 ## 6️⃣ Surveillance

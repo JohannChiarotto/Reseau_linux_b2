@@ -92,7 +92,7 @@ sudo docker ps -a
 ### 🔒 Sécurité et Maintenance
 
 **Accès SSH Sécurisé**
-L'accès aux machines FIREWALL, SERVEUR et BACKUP est sécurisé :
+L'accès aux machines FIREWALL, SERVEUR, SUPERVISION et BACKUP est sécurisé :
 - **Port modifié** : 2222 (au lieu de 22)
 - **Root désactivé** : `PermitRootLogin no`
 - **Contrôle d'accès** : Autorisation limitée à un utilisateur spécifique.
@@ -102,11 +102,6 @@ L'accès aux machines FIREWALL, SERVEUR et BACKUP est sécurisé :
 - Un script automatisé (backup_rsync.sh`) s'exécute tous les jours à 3h00 du matin via une tâche cron.
 - Les fichiers du système sont sauvegardés via rsync.
 - Une notification par mail est envoyée avec le statut et l'emplacement de la sauvegarde.
-
-**Surveillance**
-L'état des conteneurs Docker (Web et Mail) est géré avec la politique `restart: always` assurant une haute disponibilité en cas de crash du service.
-
-(Note : L'implémentation de la surveillance avancée type Prometheus/Grafana est prévue pour une version future).
 
 📖 Documentation
 - commandes_configurations.md : Référence complète et chronologique des commandes et configurations manuelles effectuées (réseau, SSH, Nginx, Mail, Docker).

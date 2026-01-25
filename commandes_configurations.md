@@ -35,6 +35,9 @@ BACKUP :
 CLIENT :
 - Carte 3 -> 192.168.58.20
 
+SUPERVISION :
+- Carte 1 -> 192.168.56.30
+
 
 
 ### Configuration carte HostOnly
@@ -508,3 +511,125 @@ Pour voir si les docker fonctionnent bien : `sudo docker ps -a`
 
 ‎ 
 ## 6️⃣ Surveillance
+
+Afin de réaliser la surveillance, nous allons utilisé la dernière VM : **SUPERVISION**
+
+Commencons par créer un fichier monitoring. `mkdir monitoring`
+
+Créer les trois fichier suivants :
+
+**docker-compose.yml** :
+```
+version: '3.8'
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./alert.rules.yml:/etc/prometheus/alert.rules.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:latest
+    container_name: blackbox-exporter
+    ports:
+      - "9115:9115"
+```
+
+**prometheus.yml**
+```
+global:
+  scrape_interval: 15s
+
+rule_files:
+  - "alert.rules.yml"
+
+scrape_configs:
+  - job_name: 'serveurs_physiques'
+    static_configs:
+      - targets: ['192.168.56.20:9100']
+
+  - job_name: 'site_web_https'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - http://192.168.56.20
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+```
+
+**alert.rules.yml**
+```
+groups:
+  - name: projet_alerts
+    rules:
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ALERTE : L'instance {{ $labels.instance }} est injoignable !"
+
+      - alert: SiteWebHS
+        expr: probe_success == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ALERTE : Le site web est inaccessible de l'extérieur !"
+
+      - alert: DisquePresquePlein
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Attention : Moins de 10% d'espace libre sur {{ $labels.instance }}"
+```
+
+Sur **SERVEUR** ajouter le bloc suivant dans le fichier de configuration du docker du service web et relancer le.
+
+```
+services:
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+```
+
+Ouvrir les ports :
+
+```
+sudo firewall-cmd --permanent --add-port=9100/tcp
+sudo firewall-cmd --permanent --add-port=9100/udp
+sudo firewall-cmd --reload
+
+sudo firewall-cmd --list-ports
+```
+
+Relancer tous vos docker sur le **SERVEUR** et le **SUPERVISION** avec la commande suivante :
+
+```
+sudo docker compose up -d
+```

@@ -27,7 +27,7 @@ L'infrastructure utilise un modèle à **trois sous-réseaux distincts**, chacun
 
 ![alt text](fichier_supplementaire/architecture.png)
 
-* **Réseaux Utilisés :** `192.168.56.0/24` (Réseau Serveur), `192.168.57.0/24` (Réseau Sauvegarde), `192.168.58.0/24` (Réseau Client).
+* **Réseaux Utilisés :** `192.168.56.0/24` (Réseau Serveur, Monitoring), `192.168.57.0/24` (Réseau Sauvegarde), `192.168.58.0/24` (Réseau Client).
 * **Système d'Exploitation :** **Rocky Linux 9.7 (Minimal)** pour toutes les machines.
 
 ### 2. Adressage IP
@@ -38,12 +38,14 @@ L'infrastructure utilise un modèle à **trois sous-réseaux distincts**, chacun
 | **SERVEUR** | Services Web et Mail | `192.168.56.20` | - | - |
 | **BACKUP** | Stockage des Sauvegardes | - | `192.168.57.20` | - |
 | **CLIENT** | Machine de Test/Accès | - | - | `192.168.58.20` |
+| **SUPERVISION** | Machine supervision | `192.168.58.30` | - | - |
 
 | Accès depuis l'hôte | IP (Réseau HostOnly) |
 | :--- | :--- |
 | **Accès au SERVEUR** | `192.168.56.10` (Via FIREWALL) |
 | **Accès au BACKUP** | `192.168.57.10` (Via FIREWALL) |
 | **Accès au CLIENT** | `192.168.58.10` (Via FIREWALL) |
+| **Accès au SUPERVISION** | `192.168.56.10` (Via FIREWALL) |
 
 ### 3. Services Déployés
 

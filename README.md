@@ -54,6 +54,7 @@ L'infrastructure utilise un modèle à **trois sous-réseaux distincts**, chacun
 | **Service Web** | Site vitrine avec redirection HTTP vers HTTPS | **Nginx** | ✅ Oui | `https://192.168.56.20` |
 | **Service de Mail** | Serveur de messagerie local (SMTP/IMAP) | **Postfix & Dovecot** | ✅ Oui | Port 25 et 143 |
 | **Sauvegarde** | Sauvegarde automatisée de l'infrastructure | **rsync** + **cron** | ❌ Non | `192.168.57.20` |
+| **Supervision** | Supervision des services et du serveur| **Prometheus** | ❌ Non | `192.168.57.30:9090/targets` |
 
 ### 4. Outils Clés 
 
@@ -63,7 +64,7 @@ L'infrastructure utilise un modèle à **trois sous-réseaux distincts**, chacun
 | **Conteneurisation** | **Docker** & **Docker Compose** |
 | **Système** | **Rocky Linux 9** / Pare-feu **FirewallD** / **SELinux** |
 | **Sauvegarde** | **rsync** via scripts bash et **Crontab** |
-
+| **Supervision** | **Prometheus** |
 ---
 
 ## ⚙️ Déploiement et Automatisation

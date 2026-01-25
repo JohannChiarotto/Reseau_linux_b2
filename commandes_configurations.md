@@ -22,7 +22,7 @@ Carte 3 : 192.168.58.1
 
 FIREWALL:
 - NAT
-- Carte 1 -> 192.168.56.10 -> (serveur)
+- Carte 1 -> 192.168.56.10 -> (serveur, supervision)
 - Carte 2 -> 192.168.57.10 -> (backup)
 - Carte 3 -> 197.168.58.10 -> (client)
 
@@ -77,7 +77,7 @@ su - <NAME>
 
 ### Configuration SSH 
 
-Cette configuration s'applique sur les VMs : FIREWALL, SERVEUR & BACKUP.
+Cette configuration s'applique sur les VMs : **FIREWALL**, **SERVEUR**, **SUPERVISION** & **BACKUP**.
 
 ```bash
 nano /etc/ssh/sshd_config

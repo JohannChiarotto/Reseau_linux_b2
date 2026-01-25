@@ -1,12 +1,12 @@
 #!/bin/bash
 
 #############################################
-# Script de sauvegarde multi-VMs personnalisable
-# Version simplifiée avec personnalisation par VM
+# Script de sauvegarde multi-VMs + Cloud
+# Version avec Rclone intégré
 #############################################
 
 # ═══════════════════════════════════════════════════════════════
-#                    CONFIGURATION GÉNÉRALE
+#                     CONFIGURATION GÉNÉRALE
 # ═══════════════════════════════════════════════════════════════
 
 BACKUP_ROOT="$HOME/backup-data"
@@ -19,30 +19,26 @@ RETENTION_DAYS_LOCAL=7
 SSH_USER="$(whoami)"
 SSH_KEY="$HOME/.ssh/id_rsa"
 
+# Configuration Cloud (Rclone)
+# ⚠️ IMPORTANT : Remplacez "mon_drive" par le nom configuré dans 'rclone config'
+RCLONE_REMOTE="gdrive"       
+CLOUD_DIR="Backups"      # Dossier de destination sur le Cloud
+
 # ═══════════════════════════════════════════════════════════════
-#              CONFIGURATION DES VMs À SAUVEGARDER
+#               CONFIGURATION DES VMs À SAUVEGARDER
 # ═══════════════════════════════════════════════════════════════
 
-# Définir vos VMs avec leurs IPs et les dossiers à sauvegarder
 # Format: "nom_vm|ip|dossiers_séparés_par_virgule"
-
 VMS_CONFIG=(
-    # Exemple 1: VM Serveur - sauvegarde /home et /var/www
+    # Exemple 1: VM Serveur
     "serveur|192.168.56.20|/home,/var/www"
     
-    # Exemple 2: VM Firewall - sauvegarde /home et /etc
-    "firewall|192.168.58.20|/home,/"
+    # Exemple 2: VM Firewall
+    "firewall|192.168.58.10|/home"
     
-    # Exemple 3: VM Backup - sauvegarde uniquement /home
+    # Exemple 3: VM Backup
     "backup|192.168.57.20|/home"
 )
-
-# ═══════════════════════════════════════════════════════════════
-#    ⚠️  MODIFICATION : Éditez VMS_CONFIG ci-dessus avec :
-#    - Le nom de votre VM
-#    - Son adresse IP
-#    - Les dossiers à sauvegarder (séparés par des virgules)
-# ═══════════════════════════════════════════════════════════════
 
 # Créer les répertoires nécessaires
 mkdir -p "${BACKUP_ROOT}"
@@ -93,17 +89,16 @@ check_remote_rsync() {
     fi
 }
 
-# Fonction de sauvegarde d'une VM
+# Fonction de sauvegarde d'une VM (Locale)
 backup_vm() {
     local vm_name="$1"
     local vm_ip="$2"
     local vm_dirs="$3"
     local vm_backup_dir="${BACKUP_ROOT}/${DATE}/${vm_name}"
     
-    log "=========================================="
-    log "Sauvegarde de ${vm_name} (${vm_ip})"
-    log "Dossiers: ${vm_dirs}"
-    log "=========================================="
+    log "------------------------------------------"
+    log "Sauvegarde LOCALE de ${vm_name} (${vm_ip})"
+    log "------------------------------------------"
     
     # Vérifier la connectivité
     if ! check_ssh_connectivity "${vm_name}" "${vm_ip}"; then
@@ -128,10 +123,9 @@ backup_vm() {
     
     # Sauvegarder chaque répertoire
     for SOURCE_DIR in "${DIRS[@]}"; do
-        # Enlever les espaces
-        SOURCE_DIR=$(echo "$SOURCE_DIR" | xargs)
+        SOURCE_DIR=$(echo "$SOURCE_DIR" | xargs) # Enlever les espaces
         
-        log "  → Sauvegarde de ${SOURCE_DIR} depuis ${vm_name}..."
+        log "  → Récupération de ${SOURCE_DIR}..."
         
         # Vérifier que le répertoire existe sur la VM
         if ! ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no "${SSH_USER}@${vm_ip}" "test -d ${SOURCE_DIR}" 2>/dev/null; then
@@ -139,7 +133,7 @@ backup_vm() {
             continue
         fi
         
-        # Nom du répertoire de destination
+        # Nom du répertoire de destination (aplatir le chemin)
         DEST_NAME=$(echo "${SOURCE_DIR}" | tr '/' '_' | sed 's/^_//')
         DEST_PATH="${vm_backup_dir}/${DEST_NAME}"
         
@@ -148,11 +142,7 @@ backup_vm() {
             --delete \
             --exclude='*.log' \
             --exclude='**/cache/' \
-            --exclude='**/cache/**' \
             --exclude='.cache' \
-            --exclude='.cache/**' \
-            --exclude='**/tmp/' \
-            --exclude='**/temp/' \
             --timeout=300 \
             "${SSH_USER}@${vm_ip}:${SOURCE_DIR}/" "${DEST_PATH}/" >> "${LOG_FILE}" 2>&1; then
             log "  ✓ ${SOURCE_DIR} sauvegardé"
@@ -162,72 +152,95 @@ backup_vm() {
         fi
     done
     
-    # Créer fichier de métadonnées pour cette VM
-    cat > "${vm_backup_dir}/vm_info.txt" << EOF
-VM: ${vm_name}
-IP: ${vm_ip}
-Date: ${DATE}
-Répertoires: ${vm_dirs}
-Taille: $(du -sh "${vm_backup_dir}" 2>/dev/null | cut -f1)
-Erreurs: ${dir_error_count}
-EOF
-    
+    # Métadonnées
     local size=$(du -sh "${vm_backup_dir}" 2>/dev/null | cut -f1)
-    log "Taille ${vm_name}: ${size}"
+    echo "VM: ${vm_name} | IP: ${vm_ip} | Date: ${DATE} | Taille: ${size}" > "${vm_backup_dir}/vm_info.txt"
+    log "Terminé pour ${vm_name}. Taille: ${size}"
     
     return ${dir_error_count}
 }
 
+# Fonction d'envoi vers le Cloud (Rclone)
+upload_to_cloud() {
+    local source_dir="$1"
+    local dest_dir="${CLOUD_DIR}/$(basename "${source_dir}")"
+
+    log "=========================================="
+    log "☁️  DÉBUT DU TRANSFERT CLOUD (${RCLONE_REMOTE})"
+    log "=========================================="
+
+    # Vérifier rclone
+    if ! command -v rclone &> /dev/null; then
+        log "✗ ERREUR: rclone n'est pas installé."
+        return 1
+    fi
+
+    # Vérifier la configuration rclone
+    if ! rclone listremotes | grep -q "^${RCLONE_REMOTE}:"; then
+        log "✗ ERREUR: Remote rclone '${RCLONE_REMOTE}' introuvable."
+        log "  Vérifiez la variable RCLONE_REMOTE en haut du script."
+        return 1
+    fi
+
+    log "Envoi en cours vers ${RCLONE_REMOTE}:${dest_dir}..."
+
+    # Copie vers le cloud
+    if rclone copy "${source_dir}" "${RCLONE_REMOTE}:${dest_dir}" \
+        --transfers=4 \
+        --checkers=8 \
+        --stats-one-line \
+        --log-file="${LOG_FILE}" \
+        --log-level=INFO; then
+        
+        log "✓ Transfert Cloud réussi !"
+        return 0
+    else
+        log "✗ Échec du transfert Cloud."
+        return 1
+    fi
+}
+
 # Fonction de nettoyage local
 cleanup_local_backups() {
-    log "=========================================="
-    log "Nettoyage local (>${RETENTION_DAYS_LOCAL} jours)"
-    log "=========================================="
-    
+    log "Nettoyage local (>${RETENTION_DAYS_LOCAL} jours)..."
     if [ -d "${BACKUP_ROOT}" ]; then
         find "${BACKUP_ROOT}" -maxdepth 1 -type d -mtime +${RETENTION_DAYS_LOCAL} ! -path "${BACKUP_ROOT}" -exec rm -rf {} \; 2>/dev/null
         log "✓ Nettoyage local terminé"
     fi
 }
 
-# DÉBUT DU SCRIPT
+# ===============================================================
+#                        DÉBUT DU SCRIPT
+# ===============================================================
 log "=========================================="
-log "DÉMARRAGE SAUVEGARDE MULTI-VMS"
+log "DÉMARRAGE SAUVEGARDE MULTI-VMS + CLOUD"
 log "Date: $(date '+%d/%m/%Y %H:%M:%S')"
-log "Utilisateur: ${SSH_USER}"
-log "Destination: ${BACKUP_ROOT}/${DATE}"
+log "Destination Locale: ${BACKUP_ROOT}/${DATE}"
+log "Destination Cloud: ${RCLONE_REMOTE}:${CLOUD_DIR}"
 log "=========================================="
 
-# Vérifier que rsync est installé localement
+# 1. Vérifications pré-requises
 if ! command -v rsync &> /dev/null; then
-    log "✗ ERREUR: rsync n'est pas installé sur cette machine"
-    log "   Installez-le avec: sudo dnf install -y rsync"
-    send_email "❌ Erreur sauvegarde multi-VMs" "rsync n'est pas installé localement"
+    log "✗ ERREUR: rsync absent."
     exit 1
 fi
 
-# Vérifier la clé SSH
 if [ ! -f "${SSH_KEY}" ]; then
     log "⚠️  ATTENTION: Clé SSH non trouvée: ${SSH_KEY}"
-    log "   Générez une clé avec: ssh-keygen -t rsa -b 4096 -f ${SSH_KEY}"
-    log "   Puis copiez-la sur chaque VM: ssh-copy-id -i ${SSH_KEY} ${SSH_USER}@<VM_IP>"
 fi
 
-# Vérifier l'espace disque
-AVAILABLE_SPACE=$(df -h "${HOME}" | awk 'NR==2 {print $4}')
-log "💾 Espace disque disponible: ${AVAILABLE_SPACE}"
-
-# Compteurs
+# 2. Initialisation des compteurs
 TOTAL_VMS=0
 FAILED_VMS=0
 SUCCESS_VMS=0
+CLOUD_STATUS="Non tenté"
+CLOUD_ICON="⚪"
 
-# Tableau pour stocker les infos des VMs
+# Tableaux de config
 declare -a VM_NAMES
 declare -a VM_IPS
 declare -a VM_DIRS
 
-# Parser la configuration
 for vm_config in "${VMS_CONFIG[@]}"; do
     IFS='|' read -r vm_name vm_ip vm_dirs <<< "$vm_config"
     VM_NAMES+=("$vm_name")
@@ -235,14 +248,7 @@ for vm_config in "${VMS_CONFIG[@]}"; do
     VM_DIRS+=("$vm_dirs")
 done
 
-# Afficher la configuration
-log "Configuration des VMs:"
-for i in "${!VM_NAMES[@]}"; do
-    log "  ${VM_NAMES[$i]} → ${VM_IPS[$i]} → ${VM_DIRS[$i]}"
-done
-log ""
-
-# Sauvegarder chaque VM
+# 3. Boucle de sauvegarde LOCALE
 for i in "${!VM_NAMES[@]}"; do
     vm_name="${VM_NAMES[$i]}"
     vm_ip="${VM_IPS[$i]}"
@@ -255,129 +261,100 @@ for i in "${!VM_NAMES[@]}"; do
     else
         FAILED_VMS=$((FAILED_VMS + 1))
     fi
-    
-    log ""
 done
 
-# Créer un fichier récapitulatif global
 BACKUP_DIR="${BACKUP_ROOT}/${DATE}"
-if [ -d "${BACKUP_DIR}" ]; then
-    cat > "${BACKUP_DIR}/backup_summary.txt" << EOF
-========================================
-RÉSUMÉ SAUVEGARDE MULTI-VMS
-========================================
-Date: ${DATE}
-VMs traitées: ${TOTAL_VMS}
-VMs réussies: ${SUCCESS_VMS}
-VMs échouées: ${FAILED_VMS}
-Taille totale: $(du -sh "${BACKUP_DIR}" 2>/dev/null | cut -f1)
 
-VMs sauvegardées:
-$(for i in "${!VM_NAMES[@]}"; do 
-    echo "  - ${VM_NAMES[$i]} (${VM_IPS[$i]}) → ${VM_DIRS[$i]}"
-done)
-EOF
+# 4. Envoi vers le CLOUD
+if [ ${SUCCESS_VMS} -gt 0 ] && [ -d "${BACKUP_DIR}" ]; then
+    if upload_to_cloud "${BACKUP_DIR}"; then
+        CLOUD_STATUS="SUCCÈS"
+        CLOUD_ICON="✅"
+    else
+        CLOUD_STATUS="ÉCHEC"
+        CLOUD_ICON="❌"
+        FAILED_VMS=$((FAILED_VMS + 1)) # On compte l'échec cloud comme une erreur globale
+    fi
+else
+    log "Aucune sauvegarde locale réussie, saut de l'étape Cloud."
+    CLOUD_STATUS="ANNULÉ (Pas de données)"
+    CLOUD_ICON="⚠️"
 fi
 
+# 5. Résumé et Rapport
 log "=========================================="
-log "RÉSUMÉ: ${TOTAL_VMS} VMs traitées"
-log "  ✓ Réussies: ${SUCCESS_VMS}"
-log "  ✗ Échouées: ${FAILED_VMS}"
+log "RÉSUMÉ FINAL"
+log "  VMs: ${SUCCESS_VMS}/${TOTAL_VMS} OK"
+log "  Cloud: ${CLOUD_STATUS}"
 if [ -d "${BACKUP_DIR}" ]; then
-    log "Taille totale: $(du -sh "${BACKUP_DIR}" 2>/dev/null | cut -f1)"
+    log "  Taille: $(du -sh "${BACKUP_DIR}" 2>/dev/null | cut -f1)"
 fi
 log "=========================================="
 
 # Nettoyage
 cleanup_local_backups
 
-# Rapport final par email
-if [ ${FAILED_VMS} -gt 0 ]; then
-    STATUS_ICON="⚠️"
-    STATUS_TEXT="AVEC ERREURS"
+# Définition du statut global pour l'email
+if [ ${FAILED_VMS} -gt 0 ] || [ "${CLOUD_ICON}" == "❌" ]; then
+    GLOBAL_ICON="⚠️"
+    GLOBAL_TEXT="AVEC ERREURS"
 else
-    STATUS_ICON="✅"
-    STATUS_TEXT="SUCCÈS COMPLET"
+    GLOBAL_ICON="✅"
+    GLOBAL_TEXT="SUCCÈS COMPLET"
 fi
 
-# Email de rapport
-if command -v mail &> /dev/null && [ -d "${BACKUP_DIR}" ]; then
-    cat << EOF | mail -s "${STATUS_ICON} Sauvegarde Multi-VMs - $(date '+%d/%m/%Y')" "${EMAIL_DEST}" 2>/dev/null
+# Envoi de l'email
+if command -v mail &> /dev/null; then
+    cat << EOF | mail -s "${GLOBAL_ICON} Backup - ${GLOBAL_TEXT} - $(date '+%d/%m')" "${EMAIL_DEST}" 2>/dev/null
 ========================================================
-      SAUVEGARDE MULTI-VMS - RAPPORT ${STATUS_TEXT}
+       RAPPORT DE SAUVEGARDE (LOCAL + CLOUD)
 ========================================================
 
-${STATUS_ICON} Statut global : ${STATUS_TEXT}
+${GLOBAL_ICON} Statut Global : ${GLOBAL_TEXT}
 📅 Date : $(date '+%d/%m/%Y à %H:%M:%S')
-🖥️  Machine : $(hostname)
-👤 Utilisateur : ${SSH_USER}
 
 --------------------------------------------------------
-                  RÉSUMÉ DES VMS
+☁️  ÉTAT CLOUD (${RCLONE_REMOTE})
 --------------------------------------------------------
+Statut : ${CLOUD_ICON} ${CLOUD_STATUS}
+Destination : ${CLOUD_DIR}/$(basename "${BACKUP_DIR}")
 
+--------------------------------------------------------
+🖥️  ÉTAT VMS (LOCAL)
+--------------------------------------------------------
 📊 Total VMs : ${TOTAL_VMS}
-✅ VMs OK : ${SUCCESS_VMS}
-❌ VMs échouées : ${FAILED_VMS}
+✅ Réussies : ${SUCCESS_VMS}
+❌ Échouées : ${FAILED_VMS}
 
-VMs sauvegardées :
+Détails :
 $(for i in "${!VM_NAMES[@]}"; do
     vm_name="${VM_NAMES[$i]}"
-    vm_ip="${VM_IPS[$i]}"
-    vm_dirs="${VM_DIRS[$i]}"
-    if [ -d "${BACKUP_ROOT}/${DATE}/${vm_name}" ]; then
-        size=$(du -sh "${BACKUP_ROOT}/${DATE}/${vm_name}" 2>/dev/null | cut -f1 || echo "N/A")
-        echo "  • ${vm_name} (${vm_ip})"
-        echo "    Dossiers: ${vm_dirs}"
-        echo "    Taille: ${size}"
-        echo ""
+    if [ -d "${BACKUP_DIR}/${vm_name}" ]; then
+        size=$(du -sh "${BACKUP_DIR}/${vm_name}" 2>/dev/null | cut -f1)
+        echo "  • ${vm_name} : OK (${size})"
     else
-        echo "  • ${vm_name} (${vm_ip}) - ÉCHEC"
-        echo ""
+        echo "  • ${vm_name} : ÉCHEC ❌"
     fi
 done)
 
 --------------------------------------------------------
-               DÉTAILS SAUVEGARDE
+💾 STOCKAGE LOCAL
 --------------------------------------------------------
-
-💾 Destination : ${BACKUP_DIR}
-📊 Taille totale : $(du -sh "${BACKUP_DIR}" 2>/dev/null | cut -f1)
-⏱️  Rétention : ${RETENTION_DAYS_LOCAL} jours
-
---------------------------------------------------------
-                      LOGS
---------------------------------------------------------
-
-📜 Log complet : ${LOG_FILE}
+Dossier : ${BACKUP_DIR}
+Taille Totale : $(du -sh "${BACKUP_DIR}" 2>/dev/null | cut -f1)
+Espace Libre Disque : $(df -h "${HOME}" | awk 'NR==2 {print $4}')
 
 --------------------------------------------------------
-                  RESTAURATION
+ℹ️  LOGS
 --------------------------------------------------------
-
-💡 Pour restaurer un fichier :
-   cd ${BACKUP_DIR}/<vm_name>
-   cp -r <fichier> /destination/
-
-💡 Pour restaurer une VM complète :
-   rsync -avz ${BACKUP_DIR}/<vm_name>/home/ ${SSH_USER}@<vm_ip>:/home/
+Fichier log : ${LOG_FILE}
 
 ========================================================
-Message automatique - Système de sauvegarde multi-VMs
-$(hostname) - $(date '+%Y')
+$(hostname) - Système de Sauvegarde Automatique
 ========================================================
 EOF
-    
-    log "Email de rapport envoyé"
+    log "Email de rapport envoyé."
 fi
 
-log "=========================================="
-log "FIN DE LA SAUVEGARDE MULTI-VMS"
-log "=========================================="
-
-# Code de sortie
-if [ ${FAILED_VMS} -gt 0 ]; then
-    exit 1
-else
-    exit 0
-fi
+log "FIN DU SCRIPT"
+exit 0

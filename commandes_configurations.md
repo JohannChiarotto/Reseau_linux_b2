@@ -190,18 +190,39 @@ cat /proc/sys/net/ipv4/ip_forward
 ‎ 
 ## 2️⃣ Sauvegarde et restauration
 
+1. Prérequis & Connexion SSH Installez les outils et configurez la connexion sans mot de passe vers les machines à sauvegarder (Web/App, Firewall, etc.) :
 
-Script de sauvegarde à automatisé avec cron.
+Bash
+# Installation
+sudo dnf update -y && sudo dnf install -y rsync openssh-clients postfix mailx cyrus-sasl-plain
 
-```bash
-sudo crontab -e
-0 3 * * * /usr/local/bin/backup_rsync.sh 
-```
+# Génération clé SSH & Envoi (Remplacer <IP_CIBLE> par les IP des VMs)
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
+ssh-copy-id user@<IP_CIBLE>
+2. Déploiement des Scripts Créez l'arborescence et rendez les scripts exécutables (assurez-vous que backup.sh et restore.sh sont présents) :
 
-Nom du fichier de sauvegarde : `backup_rsync.sh`.
+Bash
+mkdir -p ~/backup ~/backup-data ~/restore ~/cloud
+chmod +x ~/backup/backup.sh ~/restore/restore.sh
+3. Configuration Services (Email & Cloud)
 
-La sauvegarde sert a enregistrer tous les fichiers qu'il y a sur la VM.\
-Une fois la sauvevegarde faite, nous revevons un mail du status de la sauvegarde ainsi que l'emplacement de la sauvegarde.
+Postfix (Gmail) :
+
+Créez /etc/postfix/sasl_passwd avec : [smtp.gmail.com]:587 votre_email@gmail.com:votre_pass_app.
+
+Compilez : sudo postmap /etc/postfix/sasl_passwd et sécurisez chmod 600.
+
+Configurez /etc/postfix/main.cf pour utiliser le relay host Gmail.
+
+Rclone (Cloud) :
+
+Copiez votre configuration dans ~/.config/rclone/rclone.conf ou lancez rclone config (choix drive).
+
+4. Automatisation (Crontab) Ajoutez la tâche planifiée (tous les jours à 02h00) via crontab -e :
+
+Extrait de code
+0 2 * * * /home/johann/backup/backup.sh >> /home/johann/backup/last_run.log 2>&1
+5. Restauration Pour restaurer une sauvegarde, lancez simplement : ~/restore/restore.sh
 
 
 ‎ 

@@ -188,11 +188,11 @@ cat /proc/sys/net/ipv4/ip_forward
 
 
 ‎ 
-## 2️⃣ Sauvegarde et restauration
+### Sauvegarde et restauration
 
 1. Prérequis & Connexion SSH Installez les outils et configurez la connexion sans mot de passe vers les machines à sauvegarder (Web/App, Firewall, etc.) :
 
-Bash
+```bash
 # Installation
 sudo dnf update -y && sudo dnf install -y rsync openssh-clients postfix mailx cyrus-sasl-plain
 
@@ -224,7 +224,7 @@ Extrait de code
 0 2 * * * /home/johann/backup/backup.sh >> /home/johann/backup/last_run.log 2>&1
 5. Restauration Pour restaurer une sauvegarde, lancez simplement : ~/restore/restore.sh
 
-
+```
 ‎ 
 ## 3️⃣ Services réseau
 
